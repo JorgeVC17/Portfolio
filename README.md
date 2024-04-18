@@ -1,6 +1,39 @@
-# Data Scientist
+# Data Scientist and Social worker
 
-# Education
+## Education
+
+### Life Sciences: Medische en Biologische Onderzoek 
+
+#### Hogeschool Utrecht, Heidelberglaan 7, 3584 CS Utrecht, Aug 2020 - Now
+
+-  During this course, I specialized in using R and Bash to communicate statistical information about medical and scientific research. Additionally, I have developed skills in Next Generation Sequencing techniques, RNA-sequencing, and metagenomics.
+
+### Minor: Big Data & Design
+
+#### Hogeschool Utrecht, Heidelberglaan 15, 3584 CS Utrecht, Sep 2023 - Jan 2024
+
+-  During this minor I learned to programming in python to communicate statistical information over the impact of data in our world. I also learned various Machine Learning techniques such as Computer Vision, Classification algorithms and Generative AI and I develop multiple design skills in programs such as Figma where I learned the importance of design behind the development of applications and start-up ideas.
+
+## Work Experience
+
+### Social Work (Volunteer) 
+
+#### The Mall Jongerenwerk Gorinchem, Burgstraat 37, 4201 AB Gorinchem,  Jan 2019 - Now
+
+-  I offered crucial emotional support to youth with special needs, empowering them to achieve developmental milestones and embrace healthy habits. I organized and led activities focused on mental, emotional, and educational growth, collaborating with parents, teachers, and school staff to address educational issues effectively.
+
+### Verkoopassistentie
+
+#### Fruit Company, Gorinchem, , Sep 2022 - Jul 2023
+
+-   I handled inventory management and supported the sales team's daily activities. I provided customer advice both in person and through phone and email communication. Additionally, I performed various administrative tasks as required.
+
+### Productie Medewerker
+
+#### Vogelaar Vredehof, Polderdijk 2, Enspijk, Jul 2020 - Jan 2022.
+
+-  I helped machine operators with setting up and running production equipment. This involved moving items between equipment and cleaning work areas. I quickly solved problems to meet productivity goals.",
+
 ## Personal Achievements
 
 ### Medipredict
