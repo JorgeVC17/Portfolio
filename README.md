@@ -47,7 +47,7 @@ In the past year, I developed my startup idea with two classmates: [*Pim Theunis
 
 -   [**Jupyter Notebook**](https://github.com/JorgeVC17/Diabetes-Classifier)
 
--   [**Figma Website**](https://www.figma.com/file/aohuwbCtuwOTu6i4mDiiCQ/Healthcare-Dashboard?type=design&node-id=0%3A1&mode=design&t=FjqPjuagxVU7sOHB-1)
+-   [**Figma Website**](https://www.figma.com/proto/aohuwbCtuwOTu6i4mDiiCQ/Healthcare-Dashboard?type=design&scaling=scale-down&page-id=0%3A1&node-id=161-255&starting-point-node-id=161%3A255&show-proto-sidebar=1)
 
 ### Data Story
 
