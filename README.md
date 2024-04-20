@@ -53,7 +53,7 @@ In the past year, I developed my startup idea with two classmates: [*Pim Theunis
 
 To test the Python skills I learned during my minor, I challenged myself to develop a Streamlit app where I tell a story using public data. I chose to focus on how climate change affects the increasing prevalence of diseases such as **malaria**. Developing this data story marked my initial step in my data analysis career. Here is the link to the Streamlit app containing this data story.
 
--   
+-   [**Data Story**](https://malariadatastory.streamlit.app/)
 
 ### Hackathon
 
