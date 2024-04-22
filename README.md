@@ -1,6 +1,6 @@
 # Data Scientist and Social worker
 
-# [Portfolio](https://jorgevc17.github.io/html_portfolio/index.html)
+# [Check my portfolio!](https://jorgevc17.github.io/html_portfolio/index.html)
 
 ## About Me
 
