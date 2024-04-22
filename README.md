@@ -1,5 +1,7 @@
 # Data Scientist and Social worker
 
+# [Portfolio](https://jorgevc17.github.io/html_portfolio/index.html)
+
 ## About Me
 
 Passionate and inquisitive Life Sciences student at Hogeschool Utrecht, with a keen interest inunderstanding the intricacies of the human system and exploring the impact of data in medical research. Proficient in programming languages such as Python, R, and Bash, with a focus on data analysis and machine learning techniques. Experienced in volunteer social work, demonstrating strong communication, problem‑solving, and emotional intelligence skills. Additionally, skilled in UI/UX design with experience using tools such as Figma. Seeking opportunities to merge my diverse skill set in Life Sciences, programming, design, and social work in impactful projects within the healthcare or research sector.
