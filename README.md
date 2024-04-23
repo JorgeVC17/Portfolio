@@ -67,7 +67,7 @@ During my time as a volunteer social worker, I was responsible for organizing an
 
 ## Tech Stack
 
-1.  **Python 3.11.2**
+- **Python 3.11.2**
 
   - *Libraries:*
   
@@ -83,7 +83,7 @@ During my time as a volunteer social worker, I was responsible for organizing an
     
     -   streamlit == 1.28.2
     
-2.  **R 4.3.3**
+- **R 4.3.3**
 
   - *Rmarkdown*
   
@@ -112,13 +112,13 @@ During my time as a volunteer social worker, I was responsible for organizing an
     -   here
     
 
-3.  **Jupyter Notebook 7.1.3**
+- **Jupyter Notebook 7.1.3**
 
-4.  **Bash**
+- **Bash**
 
   - *HOMER*
 
-5.  **Computer Vision**
+- **Computer Vision**
 
   - *Tools:*
   
@@ -134,7 +134,7 @@ During my time as a volunteer social worker, I was responsible for organizing an
     
     -   roboflow == 1.1.9
 
-6.  **Classification algorithms**
+- **Classification algorithms**
 
   - *Tools:*
   
