@@ -67,15 +67,90 @@ During my time as a volunteer social worker, I was responsible for organizing an
 
 ## Tech Stack
 
-1.  Python 3.11.2
+1.  **Python 3.11.2**
 
-2.  R 4.3.3
+  - *Libraries:*
+  
+    -   pandas == 2.2.2
+    
+    -   numpy == 1.26.1
+    
+    -   matplotlib  == 3.8.1
+    
+    -   plotly == 5.18.0
+    
+    -   seaborn == 0.13.0
+    
+    -   streamlit == 1.28.2
+    
+2.  **R 4.3.3**
 
-3.  Bash
+  - *Rmarkdown*
+  
+  - *NGS Libraries:*
+  
+    -   DESeq2
+    
+    -   kraken
+    
+    -   bracken
+    
+    -   GOstats
+    
+    - "org.Hs.eg.db"
 
-4.  Computer Vision
+  - *Libraries*
+  
+    -   tidyverse
+    
+    -   ggplot
+    
+    -   pheatmap
+    
+    -   grid
+    
+    -   here
+    
 
-5.  Classification algorithms
+3.  **Jupyter Notebook 7.1.3**
+
+4.  **Bash**
+
+  - *HOMER*
+
+5.  **Computer Vision**
+
+  - *Tools:*
+  
+    -   YOLOv8
+    
+    -   CVAT.ai
+    
+    -   Roboflow
+    
+  - *Libraries:*
+  
+    -   ultralytics == 8.0.196
+    
+    -   roboflow == 1.1.9
+
+6.  **Classification algorithms**
+
+  - *Tools:*
+  
+    -   GridSearchCV
+  
+  - *Models:*
+  
+    -   KNN Classifier
+    
+    -   Logistic Regression
+    
+    -   Random Forest
+    
+  - *Library:*
+  
+    -   scikit-learn == 1.3.2
 
 ## Skills
 
