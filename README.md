@@ -47,7 +47,7 @@ Passionate and inquisitive Life Sciences student at Hogeschool Utrecht, with a k
 
 In the past year, I developed my startup idea with two classmates: [*Pim Theunisse*](https://www.linkedin.com/in/pim-theunisse-6b7898208/) and [*Marloes Ettikhoven*](https://www.linkedin.com/in/marloes-v-7a620a135/). For this startup idea, we developed the design and algorithm for an app with the main purpose of predicting various diseases. The name of this app was **Medipredict**. For this project I had the leadership of this project group and collaborated on the training and testing of the algorithm model that this app should use. Finally I also contributed to the UI/UX design for this app. Here are the links to both the **Jupyter Notebook** and the **Figma website** where the entire development process of this app is documented:
 
--   [**Jupyter Notebook**](https://github.com/JorgeVC17/Diabetes-Classifier)
+-   [**Jupyter Notebook**](https://github.com/JorgeVC17/Classification-algorithm)
 
 -   [**Figma Website**](https://www.figma.com/proto/aohuwbCtuwOTu6i4mDiiCQ/Healthcare-Dashboard?type=design&scaling=scale-down&page-id=0%3A1&node-id=161-255&starting-point-node-id=161%3A255&show-proto-sidebar=1)
 
