@@ -1,6 +1,6 @@
 # Data Scientist and Social worker
 
-[![Check my portfolio!](https://capsule-render.vercel.app/api?type=cylinder&height=300&color=AADB1E&text=Check%20my%20portfolio!&reversal=false&textBg=false&fontColor=ffffff&animation=twinkling)](https://jorgevc17.github.io/Portfolio_html/)
+[![Check my portfolio!](https://capsule-render.vercel.app/api?type=cylinder&height=200&color=AADB1E&text=Check%20my%20portfolio!&reversal=false&textBg=false&fontColor=ffffff&animation=twinkling)](https://jorgevc17.github.io/Portfolio_html/)
 
 ## About Me
 
