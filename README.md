@@ -19,7 +19,7 @@ Passionate and inquisitive Life Sciences student at Hogeschool Utrecht, with a k
 
 #### Hogeschool Utrecht, Heidelberglaan 15, 3584 CS Utrecht, Sep 2023 - Jan 2024
 
--  During this minor I learned to programming in python to communicate statistical information over the impact of data in our world. I also learned various Machine Learning techniques such as Computer Vision, Classification algorithms and Generative AI and I develop multiple design skills in programs such as Figma where I learned the importance of design behind the development of applications and start-up ideas.
+-  During this minor I learned to programming in python to communicate statistical information over the impact of data in our world. I also learned various Machine Learning techniques such as Classification algorithms and Generative AI and I develop multiple design skills in programs such as Figma where I learned the importance of design behind the development of applications and start-up ideas.
 
 ## Work Experience
 
