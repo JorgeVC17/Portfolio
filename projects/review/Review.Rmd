@@ -1,0 +1,370 @@
+---
+title: "Open Peer Review"
+author: "Jorge Vargas Centeno"
+output:
+  html_document:
+    theme: journal
+    highlight: tango
+---
+# Reproducible research skills
+
+## Open peer review of an article
+
+<div>
+  <img src="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fi.pinimg.com%2Foriginals%2Fae%2F38%2Fd8%2Fae38d86aed80887181d9d572041c4fc6.png&f=1&nofb=1&ipt=fea15f75189791247da7f564cc5044725d677e2c7f1c732117331821eb90b145&ipo=images" alt="Image" style="width: 125px; float: left; margin-right: 10px;">
+  <p> For this project I'll be testing my reproducible research skills reviewing the reproducibility and reporting practices of the article; [The COVID-19 Pandemic Eroded System Support but not Social Solidarity](https://pubmed.ncbi.nlm.nih.gov/37590308/)</p>
+  <br>
+</div>
+
+![Article: The COVID-19 Pandemic Eroded System Support but not Social Solidarity](../celegans_plate/screnshots/article.png)
+
+### Project enviroment of the article 
+
+My chosen article have the following [project enviroment](https://osf.io/fwy5j/files/osfstorage):
+
+![Project enviroment of the article: the COVID-19 Pandemic Eroded System Support but not Social Solidarity](../celegans_plate/screnshots/enviroment.png)
+
+### Data structure:
+
+With the given project enviroment we will obtain the following data structure:
+
+![](../celegans_plate/screnshots/data_tree.png)
+
+For the rest of this project I'll be focusing in the R script *"agg_plot.R"* inside the folder **"C-code"**
+
+## Impressions of the code
+
+If we open the R script *"agg_plot.R"* we could find the following code:
+
+```{r first impressions, echo=TRUE, eval=FALSE}
+
+# a function to calculate quantile for a specific CI width
+myquantile <- function(ci){
+         alpha = (100-ci)/2/100
+         qnorm(1-alpha)
+}
+
+
+# custom functions for calculating weighted mean and SE which work inside functions 
+mymean <- function(x,w) {wtd.mean(x = x, weights = w, na.rm  = T)}
+myse <- function(x,w) {sqrt(wtd.var(x, weights = w, na.rm = T))/sqrt(length(x))}
+
+
+# Import data -------------------------------------------------------------
+
+df_full <- readRDS("B-analysis-data/yougov_clean_202204122.rds")
+var_lookup <- readRDS("B-analysis-data/varlookup.rds")
+
+
+
+# Figure 1. Benchmarked changes in Solidarity and System support ------------------------------
+# ~ Crunch Systemic variables  -----------------------------------------------------
+
+system_dvs <- c("system_satisfaction.z", "level_democracy.z", "supp_demcy.z",
+                "proudcitizen.z")
+
+# 4*3 country-wave means for individual outcomes
+system_4c <- df_full %>% 
+        # subset to relevant vars for system support
+        dplyr::select(country, weight, wavedate, all_of(system_dvs)) %>% 
+        # calculate weighted mean by country-waves
+        pivot_longer(all_of(system_dvs), names_to = "dv") %>% 
+        group_by(country, wavedate, dv) %>% 
+        summarise(mean = mymean(value, weight), 
+                  se = myse(value, weight)) %>% glimpse
+
+# reported in the text:
+system_4c %>% 
+        group_by(country) %>% 
+        summarise(sum(mean > 0))
+
+# reported in the text:
+system_4c %>% 
+        filter(country %in% c("Denmark")) %>% 
+        filter(dv %in% c("level_democracy.z") & 
+                       wavedate == ymd("2020-12-12")) 
+
+# ---------------------A LOT MORE OF DATA WRANGLING AND ANALYSIS ------------------------
+
+# ~ Draw system plot ---------------------------------------------------------
+# ~ Panel A of Figure 1
+
+system_facet <- ggplot(system_plotdata, aes( x =  wavedate, y = mean, color = dv)) +
+        geom_rect(data = filter(system_plotdata, country == "Pooled"), 
+                  fill = NA, color = "black",
+                  xmin = -Inf, xmax = Inf, 
+                  ymin = -Inf, ymax = Inf) + 
+        geom_hline(aes(yintercept = 0)) + 
+        geom_point(size = 1, alpha = .5) +
+        geom_line(aes(group = dv), alpha = .7) +
+        # add extra width to pooled lines
+        geom_line(data = filter(system_plotdata,dv == "Pooled"), size = 1) + 
+        # add errorbars only to pooled estimates
+        geom_errorbar(data = filter(system_plotdata,dv == "Pooled"),
+                      aes(ymin = mean - myquantile(95)*se, 
+                          ymax = mean + myquantile(95)*se),
+                      size = .6, width = 0) +
+        xlab("") + ylab("") + 
+        scale_color_manual(name = NULL,
+                           values = c("#000000", viridisLite::viridis(4)),
+                              labels = c("Pooled", 
+                                         "\nLevel of \nDemocracy",
+                                         "Proud Citizen",
+                                         "\nSupport for \nDemocracy",
+                                         "\nSatisf. with \nPol. System")
+                              ) +
+        scale_x_date(breaks = ymd(c("2020-04-20","2020-06-15","2020-12-12")), 
+                     limits = ymd(c("2020-04-01", "2020-12-31")),
+                     date_labels = "%b") +  
+        ggtitle("System Support") + 
+        facet_grid(~country) + 
+        scale_y_continuous(limits = c(-1, .2)) + 
+        theme_minimal() +
+        theme(panel.grid.minor = element_blank())
+
+system_facet
+```
+
+```{r hide code, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE}
+library(rio)
+library(tidyverse)
+library(lubridate)
+library(Hmisc)
+library(patchwork)
+library(weights)
+library(stargazer)
+library(here)
+
+# a function to calculate quantile for a specific CI width
+myquantile <- function(ci){
+         alpha = (100-ci)/2/100
+         qnorm(1-alpha)
+}
+
+
+# custom functions for calculating weighted mean and SE which work inside functions 
+mymean <- function(x,w) {wtd.mean(x = x, weights = w, na.rm  = T)}
+myse <- function(x,w) {sqrt(wtd.var(x, weights = w, na.rm = T))/sqrt(length(x))}
+
+
+# Import data -------------------------------------------------------------
+
+df_full <- readRDS(here("projects", "review", "B-analysis-data", "yougov_clean_20211210.rds"))
+var_lookup <- readRDS(here("projects", "review", "B-analysis-data", "varlookup.rds"))
+
+
+
+# Figure 1. Benchmarked changes in Solidarity and System support ------------------------------
+# ~ Crunch Systemic variables  -----------------------------------------------------
+
+system_dvs <- c("system_satisfaction.z", "level_democracy.z", "supp_demcy.z",
+                "proudcitizen.z")
+
+# 4*3 country-wave means for individual outcomes
+system_4c <- df_full %>% 
+        # subset to relevant vars for system support
+        dplyr::select(country, weight, wavedate, all_of(system_dvs)) %>% 
+        # calculate weighted mean by country-waves
+        pivot_longer(all_of(system_dvs), names_to = "dv") %>% 
+        group_by(country, wavedate, dv) %>% 
+        summarise(mean = mymean(value, weight), 
+                  se = myse(value, weight)) %>% glimpse
+
+# reported in the text:
+system_4c %>% 
+        group_by(country) %>% 
+        summarise(sum(mean > 0))
+
+# reported in the text:
+system_4c %>% 
+        filter(country %in% c("Denmark")) %>% 
+        filter(dv %in% c("level_democracy.z") & 
+                       wavedate == ymd("2020-12-12")) 
+
+# country trends pooling across four outcomes
+system_countrypool <-  df_full %>% 
+        dplyr::select(country, weight, wavedate, all_of(system_dvs)) %>% 
+        # calculate weighted mean by country-waves
+        pivot_longer(all_of(system_dvs)) %>% 
+        group_by(country, wavedate) %>% 
+        summarise(mean = mymean(value, weight),
+                  se = myse(value, weight)) %>% 
+        mutate(dv = "Pooled") %>% 
+        glimpse
+
+# outcome trends pooling across the four countries
+system_varpool <- df_full %>% 
+        # subset to relevant vars for system support
+        dplyr::select(country, weight, wavedate, all_of(system_dvs)) %>% 
+        # calculate weighted mean by country-waves
+        pivot_longer(all_of(system_dvs), names_to = "dv") %>% 
+        group_by(wavedate, dv) %>% 
+        summarise(mean = mymean(value, weight), 
+                  se = myse(value, weight)) %>% 
+        mutate(country = "Pooled") %>% 
+        glimpse
+
+# pool everything. The trend in system support across countries and vars.
+system_pooled <- df_full %>% 
+        dplyr::select(wavedate, weight, all_of(system_dvs)) %>% 
+        pivot_longer(all_of(system_dvs)) %>% 
+        group_by(wavedate) %>%
+        # group_by(wave) %>% 
+        summarise(mean = mymean(value, weight), 
+                  se = myse(value, weight)) %>% 
+        mutate(country = "Pooled", 
+               dv = "Pooled") %>% 
+        glimpse
+
+# reported in the text: 
+system_pooled %>% 
+        mutate(mean = round(mean, 2))
+
+# combine things into a single DF
+system_plotdata <- bind_rows(system_4c, system_varpool) %>% 
+        bind_rows(system_countrypool, system_pooled) %>% 
+        ungroup() %>% 
+        left_join(var_lookup) %>% 
+        mutate(dv = fct_relevel(dv, "Pooled"), 
+               country = fct_relevel(country, "Pooled"))
+
+```
+
+### Readibility
+
+After seeing this code my first impressions are:
+
+1. This code is a combination of various data wrangling and analysis steps, *including custom  functions to streamline the workflow for this project.* These various step are needed to plot the various plots inside the code and article.
+
+2. The code is really well documented. It has a lot of comments indicating what is the function of each chunk code inside code. This make more easy to understand what does the code do.
+
+3. The name of each variable and object makes sense. They don't have a random name, which makes easier to understand what is inside of object/list. 
+
+#### Readibility score
+
+Thus, due to the previous points, I'll be giving to this article a readibility score of **5 stars**
+
+![](../celegans_plate/screnshots/read_score.png)
+
+### Reproducibility
+
+To rate the reproducibility of this article, I will try to reproduce the first plot in the R script *"agg_plot.R"*. I will try to reproduce the the next code:
+
+```{r plot code, echo=TRUE, eval=FALSE}
+# ~ Draw system plot ---------------------------------------------------------
+# ~ Panel A of Figure 1
+
+system_facet <- ggplot(system_plotdata, aes( x =  wavedate, y = mean, color = dv)) +
+        geom_rect(data = filter(system_plotdata, country == "Pooled"), 
+                  fill = NA, color = "black",
+                  xmin = -Inf, xmax = Inf, 
+                  ymin = -Inf, ymax = Inf) + 
+        geom_hline(aes(yintercept = 0)) + 
+        geom_point(size = 1, alpha = .5) +
+        geom_line(aes(group = dv), alpha = .7) +
+        # add extra width to pooled lines
+        geom_line(data = filter(system_plotdata,dv == "Pooled"), size = 1) + 
+        # add errorbars only to pooled estimates
+        geom_errorbar(data = filter(system_plotdata,dv == "Pooled"),
+                      aes(ymin = mean - myquantile(95)*se, 
+                          ymax = mean + myquantile(95)*se),
+                      size = .6, width = 0) +
+        xlab("") + ylab("") + 
+        scale_color_manual(name = NULL,
+                           values = c("#000000", viridisLite::viridis(4)),
+                              labels = c("Pooled", 
+                                         "\nLevel of \nDemocracy",
+                                         "Proud Citizen",
+                                         "\nSupport for \nDemocracy",
+                                         "\nSatisf. with \nPol. System")
+                              ) +
+        scale_x_date(breaks = ymd(c("2020-04-20","2020-06-15","2020-12-12")), 
+                     limits = ymd(c("2020-04-01", "2020-12-31")),
+                     date_labels = "%b") +  
+        ggtitle("System Support") + 
+        facet_grid(~country) + 
+        scale_y_continuous(limits = c(-1, .2)) + 
+        theme_minimal() +
+        theme(panel.grid.minor = element_blank())
+
+system_facet
+
+```
+
+#### Issues
+
+The first issue that I encounter to reproduce this code had something to do with the importing of the data.
+
+```{r issue , echo=TRUE, eval=FALSE}
+# Import data -------------------------------------------------------------
+
+df_full <- readRDS("B-analysis-data/yougov_clean_202204122.rds")
+var_lookup <- readRDS("B-analysis-data/varlookup.rds")
+
+```
+
+There are two main issues with this code:
+
+1. The first one is a very common issue. Obviously the data/folder structure of the original project differs with my data/folder structure. For this reason the needed file cannot been found in my computer directory
+
+2. The second one has something to do with the name of the files. The file name **yougov_clean_202204122.rds** differs with the file name in the folder **B-analysis-data**. The file name in this folder **yougov_clean_20211210.rds**.
+
+We can resolve this issue modifing the previous code as follow:
+
+```{r issue res, echo=TRUE, eval=FALSE}
+# Import data -------------------------------------------------------------
+
+df_full <- readRDS(here("projects", "review", "B-analysis-data", "yougov_clean_20211210.rds"))
+var_lookup <- readRDS(here("projects", "review", "B-analysis-data", "varlookup.rds"))
+
+```
+
+#### Plot
+
+After resolving this previous issues we can reproduce the next figure:
+
+```{r plot, echo=TRUE}
+# ~ Draw system plot ---------------------------------------------------------
+# ~ Panel A of Figure 1
+
+system_facet <- ggplot(system_plotdata, aes( x =  wavedate, y = mean, color = dv)) +
+        geom_rect(data = filter(system_plotdata, country == "Pooled"), 
+                  fill = NA, color = "black",
+                  xmin = -Inf, xmax = Inf, 
+                  ymin = -Inf, ymax = Inf) + 
+        geom_hline(aes(yintercept = 0)) + 
+        geom_point(size = 1, alpha = .5) +
+        geom_line(aes(group = dv), alpha = .7) +
+        # add extra width to pooled lines
+        geom_line(data = filter(system_plotdata,dv == "Pooled"), size = 1) + 
+        # add errorbars only to pooled estimates
+        geom_errorbar(data = filter(system_plotdata,dv == "Pooled"),
+                      aes(ymin = mean - myquantile(95)*se, 
+                          ymax = mean + myquantile(95)*se),
+                      size = .6, width = 0) +
+        xlab("") + ylab("") + 
+        scale_color_manual(name = NULL,
+                           values = c("#000000", viridisLite::viridis(4)),
+                              labels = c("Pooled", 
+                                         "\nLevel of \nDemocracy",
+                                         "Proud Citizen",
+                                         "\nSupport for \nDemocracy",
+                                         "\nSatisf. with \nPol. System")
+                              ) +
+        scale_x_date(breaks = ymd(c("2020-04-20","2020-06-15","2020-12-12")), 
+                     limits = ymd(c("2020-04-01", "2020-12-31")),
+                     date_labels = "%b") +  
+        ggtitle("System Support") + 
+        facet_grid(~country) + 
+        scale_y_continuous(limits = c(-1, .2)) + 
+        theme_minimal() +
+        theme(panel.grid.minor = element_blank())
+
+system_facet
+```
+
+#### Reproducibility score
+
+Thus, due to the previous points, I'll be giving to this article a reproducibilityscore of **4.5 stars**
+
+![](../celegans_plate/screnshots/repro_score.png)

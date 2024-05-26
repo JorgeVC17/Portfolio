@@ -1,0 +1,88 @@
+---
+title: "COVID-19 report for `r params$country` in `r params$year`"
+output:
+  html_document:
+    theme: journal
+    highlight: tango
+params:
+  country: "Netherlands"
+  year: 2022
+  months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(here)
+library(conflicted)
+conflicts_prefer(dplyr::filter)
+```
+
+
+## Data Overview
+
+We are generating a COVID-19 report for `r params$country` for the year `r params$year` and for the months `r paste(params$months, collapse = ', ')`.
+
+```{r Importing data, echo=FALSE, eval=TRUE}
+df <- read.csv("https://opendata.ecdc.europa.eu/covid19/nationalcasedeath_eueea_daily_ei/csv", na.strings = "", fileEncoding="UTF-8-BOM")
+
+# Process data
+covid_data <- df %>% filter(countriesAndTerritories == params$country,
+                            year == params$year,
+                            month %in% params$months)
+```
+
+
+```{r stats, echo=FALSE, eval=TRUE}
+# Summary statistics of the COVID-19 cases
+summary_cases <- covid_data %>%
+  summarize(total_cases = sum(cases, na.rm = TRUE %>% round(digits = 2)),
+            average_cases = mean(cases, na.rm = TRUE %>% round(digits = 2)),
+            max_cases = max(cases, na.rm = TRUE %>% round(digits = 2)),
+            min_cases = min(cases, na.rm = TRUE %>% round(digits = 2)))
+
+summary_deaths <- covid_data %>%
+  summarize(total_deaths = sum(deaths, na.rm = TRUE %>% round(digits = 2)),
+            average_deaths = mean(deaths, na.rm = TRUE %>% round(digits = 2)),
+            max_deaths = max(deaths, na.rm = TRUE%>% round(digits = 2)),
+            min_deaths = min(deaths, na.rm = TRUE%>% round(digits = 2)))
+```
+
+## COVID-19 Cases 
+
+```{r cases, echo=FALSE}
+covid_data %>% ggplot(aes(x = month, y = log10(cases + 1))) +
+  geom_col(na.rm = T) +
+  scale_x_continuous(breaks = seq(1, max(12), by = 1)) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 6)) +
+    labs(title = paste("COVID-19 Cases in", params$country, "in", params$year),
+       x = "Months",
+       y = "Number of Cases (Log 10 Scale)")
+```
+
+### Summary Statistics
+
+-   **Total COVID-19 cases = `r summary_cases$total_cases`**
+
+-   **Average COVID-19 cases per day = `r summary_cases$average_cases`**
+
+
+## COVID-19 Deaths
+
+```{r Deaths, echo=FALSE}
+covid_data %>% ggplot(aes(x = month, deaths)) +
+  geom_col(na.rm = T) +
+  scale_x_continuous(breaks = seq(1, max(12), by = 1)) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 6)) +
+    labs(title = paste("COVID-19 Deaths in", params$country, "in", params$year),
+       x = "Months",
+       y = "Number of Deaths")
+```
+
+### Summary Statistics
+
+-   **Total COVID-19 deaths = `r summary_deaths$total_deaths`**
+
+-   **Average COVID-19 deaths per day = `r summary_deaths$average_deaths`**
+
+

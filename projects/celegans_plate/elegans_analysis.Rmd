@@ -1,0 +1,155 @@
+---
+title: "C. Elegans Analysis"
+author: "Jorge Vargas Centeno"
+output:
+  html_document:
+    theme: journal
+    highlight: tango
+---
+```{r setup 4, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readxl)
+library(here)
+library(ggplot2)
+library(conflicted)
+conflicts_prefer(dplyr::filter)
+```
+
+
+## Metadata
+
+The data for this project was kindly supplied by J. Louter (INT/ILC) and was derived from an experiment in which adult C.elegans nematodes were exposed to varying concentrations of different compounds. The most relevant variables for the analysis of this project are:
+
+-   **RawData:** The outcome/number of offspring counted as an integer value, after incubation time.
+
+-   **compName:** The generic name of the compound/chemical.
+
+-   **compConcentration:** The concentration of the compound 
+
+-   **expType:** The type of each experiment (Test, positive- and negative control)
+
+A typical analysis for this data would be to run a **dose-response** analysis using a log-logistic model with estimates for the maximal, the minimal, the IC50 concentration and the slope at IC50. But before that we have to control, if our data was correctly import. 
+
+## Inspect file
+
+First, let's import the data of the experiment file with the function *read_excel()*
+
+```{r Open file, echo=TRUE, message=FALSE}
+# Import the file
+experiment <- read_excel(here("projects/celegans_plate/data/CE.LIQ.FLOW.062_Tidydata.xlsx"))
+
+#Show the first 6 rows of the data
+knitr::kable(head(experiment))
+```
+
+### Inspect data/variables
+
+Now that we have import the data of the experiment let's check if the type of the imported data correspond with the expected data for the each variable:
+
+**Raw Data**
+
+  - Expected type of data = **Numeric (Integer)**
+
+  - Type of data = **`r typeof(experiment$RawData)`**
+
+**compName**
+
+  - Expected type of data = **character**
+
+  - Type of data = **`r typeof(experiment$RawData)`**
+
+**compConcentration**
+
+  - Expected type of data = **Numeric (Double)**
+
+  - Type of data = **`r typeof(experiment$compConcentration)`**
+  
+After checking the data type for each variable, it has been found that the data type of the variable **"compConcentration"** does not correspond to the expected type. The reason for this error is that during the data import from Excel, the expression for the exponent of the numeric values in Excel, such as "1-E01," is interpreted as a character in R. To correct this, we need to convert this variable to numeric data using the following code:
+
+#### Changing type of data
+
+```{r, echo=TRUE, message=FALSE}
+
+experiment$compConcentration <- as.numeric(experiment$compConcentration)
+
+```
+
+Type of data now = **`r typeof(experiment$compConcentration)`**
+
+## Making a scatterplot
+
+After inspecting the data of the experiment we can make an exploratory plot to identify the set up of this experiment. For this plot we will use the following code:
+
+```{r Grafiek 1 C elegans, echo=TRUE}
+experiment %>% ggplot(aes(x=log10(compConcentration + .001), y=RawData, 
+                          group = compName, colour = compName, 
+                          shape = expType)) +
+  geom_point(na.rm = TRUE, position = position_jitter(width = 0.1))+
+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(title = "Fig 1: Scatterplot for C.elegans plate experiment",
+       x="Log_Compound Concentration",
+       y="Count offspring",
+       color = "Compound Name",  
+       shape = "Type of experiment")
+  
+```
+
+**Note:** For clearer view of the data of this experiment I have use jitter for the plotting of *Figure 1*. **Jitter** refers to the random variation added to the position of points along an axis. It is commonly used to prevent points with identical or very close values from overlapping, thus improving the clarity of the plot.
+
+With the help of the exploratory plot *"Figure 1"* we can make the following conclusions:
+
+-   The positive control for this experiment is **Ethanol.**
+
+-   The negative control for this experiment is **S-medium.**
+
+## How I would analyze this data for a typical analysis of dose-response?
+
+1.    First, I will do the previous steps in this project. These steps are **"Data exploration" and "Exploring visualization".** Because with these steps I can identify the most relevant variables and data for the plotting of a **dose-response curve.**
+
+2.    After identifying the most relevant variables and data. I would plot a **dose-response curve** with the help of the **drc package**. This will generate a model with the maximal, minimal, he IC50 concentration and the slope at IC50.
+
+3.    After plotting the dose-response curve, I would interpreted the results of this plot and after this I would write my **conclusions and discussions points**.
+
+
+## Normalizing the data of the negative control
+
+```{r normalizing, echo=TRUE, message=FALSE}
+# Calculate the mean value for controlNegative
+mean_cont_neg <- mean(experiment$RawData[experiment$expType == "controlNegative"])
+
+# check contNeg_mean
+mean_cont_neg 
+
+# Normalize data
+experiment$NormalizedData <- experiment$RawData
+
+experiment$NormalizedData[experiment$expType != "controlNegative"] <- experiment$NormalizedData[experiment$expType != "controlNegative"] / mean_cont_neg
+
+# Multiply by 1 to ensure the mean of controlNegative is equal to 1
+experiment$NormalizedData[experiment$expType == "controlNegative"] <- 1
+
+# Check the normalized data
+knitr::kable(head(experiment %>% select(RawData, NormalizedData, expType)))
+```
+
+Now that the data has been normalized, let's plot the normalized data in a new graphic.
+
+```{r Grafiek 2 C elegans, echo=TRUE}
+experiment %>% ggplot(aes(x=log10(compConcentration +.001), y=NormalizedData, 
+                          group = compName, colour = compName, 
+                          shape = expType)) +
+  geom_point(na.rm = TRUE, position = position_jitter(width = 0.1))+ # jitter to avoid overlap 
+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(title = "Fig 2: Scatterplot for C.elegans plate experiment with normalized data.",
+       x="Log_Compound Concentration",
+       y="Count offspring",
+       color = "Compound Name",  
+       shape = "Type of experiment")
+
+  
+```
+
+### Why the value of the negative control has to be set to 1?
+
+Normalizing the negative control to a value of 1 simplifies data interpretation and comparison between different experimental conditions. It provides a consistent reference point, making it easier to understand how other conditions relate to the control.

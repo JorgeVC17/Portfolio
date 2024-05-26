@@ -1,0 +1,37 @@
+---
+title: "Project Introduction"
+author: "Jorge Vargas Centeno, Naresh de Bruijn and Nicky Klaver"
+output: 
+  pdf_document :
+      includes:
+        in_header: "logo.tex"
+bibliography: bibliography.bib
+csl: https://raw.githubusercontent.com/citation-style-language/styles/master/diabetologia.csl # citation style
+notes-after-punctuation: false
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rbbt)
+```
+
+# Pedriactic Cancer
+
+Over the past decade, we have witnessed a change from traditional invasive techniques for diagnosing and monitoring cancer to more innovative and non-invasive methods, such as liquid biopsies. This new approach has revolutionized the field of clinical oncology, offering significant benefits such as simplified tumor sampling and personalized therapeutic strategies [@nikanjamLiquidBiopsyCurrent2022].
+
+Liquid biopsies involve the isolation and analysis of tumor-derived samples, such as circulating tumor cells (CTC) and circulating tumor DNA (ctDNA), from the bodily fluids of cancer patients. Once these biomarkers are extracted, they provide invaluable information about tumor characteristics such as progression, staging, heterogeneity, gene mutations, and clonal evolution. Thus, liquid biopsies have improved our understanding of tumors, leading to better detection, ongoing monitoring, and personalized treatment [@nikanjamLiquidBiopsyCurrent2022].
+
+# cfDNA
+Cell-free DNA (cfDNA) is a term used to describe small fragments of DNA that circulate freely in bodily fluids such as blood, urine, and cerebrospinal fluid. Unlike DNA contained within intact cells, cfDNA is released into the bloodstream through various physiological processes, including apoptosis, necrosis, and active secretion @bronkhorstCharacterizationCellfreeDNA2016. The origins of cfDNA are diverse and can include contributions from normal cells, as well as cells undergoing pathological processes such as cancer. In the context of liquid biopsy, which involves the analysis of biomarkers in bodily fluids for diagnostic or monitoring purposes, cfDNA holds particular significance [@nikanjamLiquidBiopsyCurrent2022; @dangCirculatingTumorDNA].
+
+In cancer patients, cfDNA can contain genetic mutations or other alterations that are characteristic of the tumor. These small fragments of DNA are called ctDNA. By isolating and analyzing cfDNA from a blood sample, clinicians can gain valuable insights into the genetic profile of a patient's tumor, potentially facilitating early detection, monitoring of disease progression, assessment of treatment response, and detection of resistance mutations [@dangCirculatingTumorDNA].
+
+
+# R shiny app
+
+The R shiny app: A place where you can "make an interactive web application that executes R code on the backend". The functionality and user friendly interactivity of the R shiny is needed for our project for 2 main reasons. When looking at data, you need to be able to visualize it. Then when this data is visualized, you are still able to give user inputs that can adjust and modify the visualization and results that you are looking for [@WhatShinyDomino].
+
+When working with the ct- and cf-DNA, we want to be able to really visualize and capture what this data means for us. But in the mean time we also would like to give inputs for our charts and graphs, that makes it so that we can really pinpoint on the things we are sought after. By having a web application that can run R calculations on the background, we can create an user friendly environment, that can be used by more than just data scientist.
+
+# References

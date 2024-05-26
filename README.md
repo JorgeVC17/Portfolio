@@ -6,28 +6,27 @@
 
 Passionate and inquisitive Life Sciences student at Hogeschool Utrecht, with a keen interest inunderstanding the intricacies of the human system and exploring the impact of data in medical research. Proficient in programming languages such as Python, R, and Bash, with a focus on data analysis and machine learning techniques. Experienced in volunteer social work, demonstrating strong communication, problem‑solving, and emotional intelligence skills. Additionally, skilled in UI/UX design with experience using tools such as Figma. Seeking opportunities to merge my diverse skill set in Life Sciences, programming, design, and social work in impactful projects within the healthcare or research sector.
 
-
 ## Education
 
-### Life Sciences: Medische en Biologische Onderzoek 
+### Life Sciences: Medische en Biologische Onderzoek
 
 #### Hogeschool Utrecht, Heidelberglaan 7, 3584 CS Utrecht, Aug 2020 - Now
 
--  During this course, I specialized in using R and Bash to communicate statistical information about medical and scientific research. Additionally, I have developed skills in Next Generation Sequencing techniques, RNA-sequencing, and metagenomics.
+-   During this course, I specialized in using R and Bash to communicate statistical information about medical and scientific research. Additionally, I have developed skills in Next Generation Sequencing techniques, RNA-sequencing, and metagenomics.
 
 ### Minor: Big Data & Design
 
 #### Hogeschool Utrecht, Heidelberglaan 15, 3584 CS Utrecht, Sep 2023 - Jan 2024
 
--  During this minor I learned to programming in python to communicate statistical information over the impact of data in our world. I also learned various Machine Learning techniques such as Classification algorithms and Generative AI and I develop multiple design skills in programs such as Figma where I learned the importance of design behind the development of applications and start-up ideas.
+-   During this minor I learned to programming in python to communicate statistical information over the impact of data in our world. I also learned various Machine Learning techniques such as Classification algorithms and Generative AI and I develop multiple design skills in programs such as Figma where I learned the importance of design behind the development of applications and start-up ideas.
 
 ## Work Experience
 
-### Social Work (Volunteer) 
+### Social Work (Volunteer)
 
-#### The Mall Jongerenwerk Gorinchem, Burgstraat 37, 4201 AB Gorinchem,  Jan 2019 - Now
+#### The Mall Jongerenwerk Gorinchem, Burgstraat 37, 4201 AB Gorinchem, Jan 2019 - Now
 
--  I offered crucial emotional support to youth with special needs, empowering them to achieve developmental milestones and embrace healthy habits. I organized and led activities focused on mental, emotional, and educational growth, collaborating with parents, teachers, and school staff to address educational issues effectively.
+-   I offered crucial emotional support to youth with special needs, empowering them to achieve developmental milestones and embrace healthy habits. I organized and led activities focused on mental, emotional, and educational growth, collaborating with parents, teachers, and school staff to address educational issues effectively.
 
 ### Verkoopassistentie
 
@@ -39,7 +38,7 @@ Passionate and inquisitive Life Sciences student at Hogeschool Utrecht, with a k
 
 #### Vogelaar Vredehof, Polderdijk 2, Enspijk, Jul 2020 - Jan 2022.
 
--  I helped machine operators with setting up and running production equipment. This involved moving items between equipment and cleaning work areas. I quickly solved problems to meet productivity goals.",
+-   I helped machine operators with setting up and running production equipment. This involved moving items between equipment and cleaning work areas. I quickly solved problems to meet productivity goals.",
 
 ## Personal Achievements
 
@@ -67,93 +66,91 @@ During my time as a volunteer social worker, I was responsible for organizing an
 
 ## Tech Stack
 
-- **Python 3.11.2**
+-   **Python 3.11.2**
 
-  - *Libraries:*
-  
-    -   pandas == 2.2.2
-    
-    -   numpy == 1.26.1
-    
-    -   matplotlib  == 3.8.1
-    
-    -   plotly == 5.18.0
-    
-    -   seaborn == 0.13.0
-    
-    -   streamlit == 1.28.2
-    
-- **R 4.3.3**
+    -   *Libraries:*
 
-  - *Rmarkdown*
-  
-  - *NGS Libraries:*
-  
-    -   DESeq2
-    
-    -   kraken
-    
-    -   bracken
-    
-    -   GOstats
-    
-    - "org.Hs.eg.db"
+        -   pandas == 2.2.2
 
-  - *Libraries*
-  
-    -   tidyverse
-    
-    -   ggplot
-    
-    -   pheatmap
-    
-    -   grid
-    
-    -   here
-    
+        -   numpy == 1.26.1
 
-- **Jupyter Notebook 7.1.3**
+        -   matplotlib == 3.8.1
 
-- **Bash**
+        -   plotly == 5.18.0
 
-  - *HOMER*
-  
-  - *Bowtie2*
+        -   seaborn == 0.13.0
 
-- **Computer Vision**
+        -   streamlit == 1.28.2
 
-  - *Tools:*
-  
-    -   YOLOv8
-    
-    -   CVAT.ai
-    
-    -   Roboflow
-    
-  - *Libraries:*
-  
-    -   ultralytics == 8.0.196
-    
-    -   roboflow == 1.1.9
+-   **R 4.3.3**
 
-- **Classification algorithms**
+    -   *Rmarkdown*
 
-  - *Tools:*
-  
-    -   GridSearchCV
-  
-  - *Models:*
-  
-    -   KNN Classifier
-    
-    -   Logistic Regression
-    
-    -   Random Forest
-    
-  - *Library:*
-  
-    -   scikit-learn == 1.3.2
+    -   *NGS Libraries:*
 
+        -   DESeq2
+
+        -   kraken
+
+        -   bracken
+
+        -   GOstats
+
+        -   "org.Hs.eg.db"
+
+    -   *Libraries*
+
+        -   tidyverse
+
+        -   ggplot
+
+        -   pheatmap
+
+        -   grid
+
+        -   here
+
+-   **Jupyter Notebook 7.1.3**
+
+-   **Bash**
+
+    -   *HOMER*
+
+    -   *Bowtie2*
+
+-   **Computer Vision**
+
+    -   *Tools:*
+
+        -   YOLOv8
+
+        -   CVAT.ai
+
+        -   Roboflow
+
+    -   *Libraries:*
+
+        -   ultralytics == 8.0.196
+
+        -   roboflow == 1.1.9
+
+-   **Classification algorithms**
+
+    -   *Tools:*
+
+        -   GridSearchCV
+
+    -   *Models:*
+
+        -   KNN Classifier
+
+        -   Logistic Regression
+
+        -   Random Forest
+
+    -   *Library:*
+
+        -   scikit-learn == 1.3.2
 
 ## Skills
 

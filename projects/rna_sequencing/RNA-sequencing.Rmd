@@ -1,0 +1,618 @@
+---
+title: "RNA-sequencing"
+author: "Carissa Eijking en Jorge Vargas Centeno"
+output:
+  html_document:
+    theme: journal
+    highlight: tango
+    toc: true
+    toc_float:
+      smooth_scroll: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(Rsubread)
+library(DESeq2)
+library("org.Hs.eg.db")
+library(GOstats)
+library(pheatmap)
+library(here)
+library(grid)
+library(gridExtra)
+library(png)
+```
+
+## **Introductie**
+
+**Hersenziekten**, zoals bijvoorbeeld de ziekte van Parkinson, worden veroorzaakt door verstoorde functie van hersencellen. De exacte moleculaire mechanismen zijn vaak onbekend, waardoor het heel waardevol zou zijn om deze cellen in een laboratorium te kunnen onderzoeken. Echter is het niet mogelijk om het hersenweefsel van een levend persoon te bestuderen. Als oplossing kunnen hersencellen gemaakt worden uit **fibroblasten**. 
+
+Fibroblasten kunnen worden omgezet naar geïnduceerde pluripotente stamcellen (iPSCs) en vervolgens kunnen deze differentiëren naar hersencellen. Dit kost echter veel tijd. Hierdoor is een alternatieve methode het direct omzetten van fibroblasten naar hersencellen door overexpressie van bepaalde transcriptiefactoren. Dit heet *transdifferentiatie*.
+
+Voor deze opdracht maken we gebruik van gepubliceerde data waarin fibroblasten van een proefpersoon werden behandeld met een *controle transcriptiefactor (BCLXL)* of de *transcriptiefactor (ONECUT2)*. Van ONECUT2 wordt vermoed dat het fibroblasten naar hersencellen kan omzetten. Er werden verschillende RNA-seq datasets voor elke fibroblast gegenereerd, waarbij elke conditie *(celtype)* in duplo werd gemeten.
+
+## **Experiment**
+
+### *Onderzoeksvraag*
+
+**Wat zijn de verschillen in genexpressie tussen BCLXL behandelde fibroblasten en ONECUT2 behandelde fibroblasten?**
+
+### *Informatie over het experiment*
+
+**Cel type:** **Fibroblasten uit de huid van de proef persoon**
+
+**Genome:** Homo sapiens (h38)
+
+**DNA type:** Paired end sequencing DNA
+
+**Sequencing machine:** Illumina NextSeq 500
+
+### *Samples*
+
+```{r Samples tabel, echo=FALSE, message=FALSE}
+samples <- read_csv(here::here("/home/daur2/rnaseq/rnaseq_onecut/onecut_sampledata_OC2.csv"))
+
+knitr::kable(head(samples))
+```
+
+## **Resultaten van de fastQC html rapporten**
+
+```{r fastQC html rapporten, echo=FALSE, fig.height=3, out.width= '100%', fig.cap="Fig. 1: Kwaliteit distributie: links is de per base quality zichtbaar van de forward read en rechts van de Reverse read. De Phred scores gaan van 0 tot 36." }
+R1_quality <-  rasterGrob(as.raster(readPNG(here::here("~/daur2/RNA_sequencing/data/images/SRR7866699_1_fastqc_quality.png"))))
+R2_quality <-  rasterGrob(as.raster(readPNG(here::here("~/daur2/RNA_sequencing/data/images/SRR7866699_2_fastqc_quality.png"))))
+grid.arrange(R1_quality, R2_quality, ncol=2, top=textGrob("Per base quality distributie van forward (links) en reverse (rechts) reads", gp=gpar(fontsize=10,font=8)))
+
+```
+
+**Conclusie:** De forward en reverse reads bevatten gemiddelde Phred scores, blauwe lijn, van >30 en geen sequences van slechte kwaliteit. Dit indiceert dat de kans waarop een verkeerde nucleotide is weergegeven kleiner is dan 99,9%. De reads zijn dus van **voldoende kwaliteit** en een alignment kan worden uitgevoerd.
+
+
+## **Count table**
+
+De alignment van de dataset met het referentiegenoom is al uitgevoerd. De ontstane bam-bestanden geven voor alle RNA-seq fragmenten de genomische locatie in het referentie genoom weer en bevatten de alignment scores en kunnen hierdoor gebruikt worden om te bepalen welke genen tot expressie zijn gebracht. 
+Door gebruik van de bam-bestanden, willen we tellen voor elk gen hoeveel fragmenten uitlijnen tegenover dat gen in het BCLXL behandelde monster of ONECUT behandelde monster. Dit is belangrijk voor de **differentiële expressieanalyse**, aangezien dit zal dienen als input.
+
+We kunnen deze "count" tabel maken m.b.v het Rsubread-pakket: **featureCounts().**
+
+### *Count tabel*
+
+```{r Count table, eval=FALSE}
+# Maak een object met de directory van bam bestanden
+bam_dir <- "/home/daur2/rnaseq/rnaseq_onecut/bam"
+
+# Maak een object met output dir voor count tables
+counts_dir <- "~/daur2/RNA_sequencing/data/count_tables"
+
+# Create vector with names of bam files
+bam_files <- list.files(bam_dir, pattern = "SRR7866[6,7]{1}[09]{1}[034]{1}\\.bam$", full.names = TRUE)
+
+# Count the reads per gene using the in-built NCBI RefSeq annotations
+read_counts <- featureCounts(
+  
+  files = bam_files,
+  annot.inbuilt = "hg38",
+  useMetaFeatures = TRUE,
+  strandSpecific = 0,
+  isPairedEnd = TRUE, 
+  countReadPairs = TRUE, 
+  nthreads = 10
+)
+```
+
+
+
+Nu dat de count tabel is gemaakt, kan de statistieke analyse worden uitgevoerd.
+
+### *Count tabel (statistieken)*
+
+```{r Count Statistieken, echo=TRUE, message=FALSE}
+#Load read counts
+counts <- readRDS("/home/daur2/rnaseq/rnaseq_onecut/counts/read_counts_OC2.rds")
+
+#Inspect count table
+str(counts)
+
+#Pakt de statieken van de lijst af.
+counts_stats <- counts$stat
+
+#Verwijderd status kolom
+##convert first column to rownames
+rownames(counts_stats) <- counts_stats$Status
+##Zet de status kolom naar NULL
+counts_stats$Status <- NULL
+
+#Tidy maken
+counts_stats_t <- counts_stats %>%
+  t %>%
+  as.tibble() %>%
+  mutate(bamfile=colnames(counts_stats),
+         totaal=colSums(counts_stats),
+         perc_assign_frags=Assigned/totaal*100)
+
+#Plot de percentage assign reads
+counts_stats_t %>% ggplot(aes(x=bamfile, y=perc_assign_frags,
+                              group=bamfile, fill=bamfile)) +
+  geom_col() +
+  geom_hline(yintercept = 60, linetype= "dashed") +
+  geom_hline(yintercept = 40, linetype = "dashed") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90)) + #Zet de naam van de het bestand in verticaal
+  scale_y_continuous(breaks = seq(0, max(100), by = 10)) + #Veranderd de stappen van de y-axis
+  coord_cartesian(ylim=c(0,100))+ 
+  labs(
+    title="Fig 2: Percentage toegewezen fragmenten per sample",
+    x="Sample",
+    y="Percentage toegewezen fragmenten per sample."
+  )
+```
+
+**Conclusie:** Op basis van de resultaten van figuur 2 kunnen we concluderen dat 40% - 60% van de fragmenten aan een gen kunnen worden toegewezen. **Deze percentages zijn vrij laag**. Dit kan een impact hebben op de komende analyses van dit experiment, omdat het lage aantal "toegewezen" fragmenten aangeeft dat een aantal fragmenten zich op andere locaties hebben gebonden of niet zijn gebonden. Dit kan leiden tot een onjuiste interpretatie van het verschil in genexpressie tussen de behandelde fibroblasten of verkeerde interpretatie van upgereguleerde of downgereguleerde genen.
+
+**Discussie:** Een mogelijk reden voor deze lage percentages gebonden fragmenten, is een mogelijke contaminatie van DNA in de monsters tijdens de uitvoering van dit experiment. Dit zal zorgen dat een redelijke aantal RNA fragmenten aan dit contaminatie DNA binden, waardoor ze niet correct kunnen worden geïnterpreteerd als *toegewezen fragmenten.* Ook kan het zijn dat dit DNA juist gezien wordt als RNA dat zich niet kon uitlijnen tegenover het referentie genoom. Dit verlaagt dan ook het percentage toegewezen fragmenten.
+
+## **DESeq2 analyse**
+
+### *Omzetten van de "count tabel" naar een DESeq object*
+
+Voordat de functies in het DESeq2-pakket gebruikt kunnen worden, moet eerst de "count tabel" omgezet worden naar een DESeq-object.
+
+Hiervoor zijn de volgende "inputs" nodig:
+
+1.  Een matrix met het aantal fragmenten voor elk gen per monster (the count table).
+
+2.  Een dataframe waarin voor elk monster in de matrix (kolommen in de matrix) de experimentele details worden gedetailleerd.
+
+3.  Een formule die de experimentele opzet gedetailleerd.(Dus welke monsters moeten worden vergeleken om het verschil in genexpressieniveaus te vinden).
+
+#### *1. "Count matrix" verkrijgen*
+
+```{r Count matrix, echo=TRUE, message=FALSE}
+# Count matrix
+count_matrix <- counts$counts
+```
+
+#### *2. Creëren van een datafram met metadata*
+
+```{r Metadata, echo=TRUE, message=FALSE}
+#Import sample data
+metadata <- read_csv("/home/daur2/rnaseq/rnaseq_onecut/onecut_sampledata_OC2.csv")
+
+#Omzet de metadata naar een dataframe
+metadata <- as.data.frame(metadata)
+
+#Voeg rijnamen naar de metadata dataframe
+rownames(metadata) <- paste0(metadata$Run, ".bam")
+
+#Check de eerste lijnen van de metadata object
+head(metadata)
+
+#Controleert dat de kolommen van de count matrix en rijen van de metadata dezelfde namen hebben.
+colnames(count_matrix) == rownames(metadata)
+
+```
+
+#### *3. Creëren van een formule met experimentele opzet*
+
+```{r Formule, echo=TRUE, message=FALSE}
+#Creëert een kolom met de test conditie
+metadata <- metadata %>%  mutate(treatment = str_replace(Cell_type, "Skin derived fibroblast overexpressing Bclxl", "BCLXL") %>%
+           str_replace("2 days after induction of OC2 in skin derived fibroblasts", "ONECUT2"))
+
+metadata$treatment <- metadata$treatment %>% factor(levels = c("BCLXL", "ONECUT2"))
+```
+
+Alle "inputs" zijn gegenereerd, waardoor het DESeqDataset object gemaakt kan worden.
+
+#### *Maak een DESeq object*
+
+```{r DESeq object, echo=TRUE, message=FALSE}
+#Creëert een DESeqDataset object
+dds <- DESeqDataSetFromMatrix(
+  countData = count_matrix,
+  colData = metadata,
+  design = ~ treatment
+)
+
+```
+
+## **RNASeq data normaliseren**
+
+Voordat de kwaliteit van RNA-sequencing data gecontroleerd kan worden, moet de data genormaliseerd worden. Normalisatie van data is belangrijk, omdat het helpt om de variabiliteit in de data te corrigeren en ervoor te zorgen dat de analyses juist zijn. Het maakt het ook makkelijker om te zien welke genen upgereguleerd of downgereguleerd worden na de verschillende behandelingen, in dit geval: *"Fibroblasten behandeld met BCLXL"* en *"Fibroblasten behandeld met ONECUT2"*
+
+```{r Normalisatie, echo=TRUE, message=FALSE}
+dds_normalized <- rlog(dds)
+```
+
+## **Kwaliteitscontrole**
+
+### *Principal component analysis*
+
+Het aantal genen in deze dataset is 28.395. Dit is vrij lastig weer te geven en te analyseren. Hierdoor wordt principal component analysis *(PCA)* uitgevoerd. Het is een methode die het aantal variabelen, in dit geval de genen, te verkleinen door middel van een aantal lineaire combinaties. De grootste spreiding genen wordt dan gevangen in een eerste variabele, principal component 1 (PC1). Dit gaat dan door tot alle genen zijn samengevat. Zo kan de scheiding van de genen gebaseerd op genexpressie duidelijker weergegeven worden.
+
+```{r PCA , echo=TRUE, message=FALSE}
+#Uitvoert PCA methode met de genormaliseerd data
+pca <- dds_normalized %>% assay() %>% t() %>% prcomp()
+
+```
+
+De PCA analyse geeft in dit geval 4 nieuwe variabelen. Om te bekijken hoeveel van data elke PC representeert wordt de *summary()* function gebruikt.
+
+```{r PCA summary, echo=TRUE}
+pca_summary <- summary(pca)$importance
+pca_summary
+```
+
+-   PC1 representeert 94.6% van de variatie.
+
+-   PC2 representeert 3,1% van de variatie.
+
+-   PC3 representeert 2.3% van de variatie.
+
+-   PC4 representeert afgerond 0% van de variatie.
+
+#### *Hypothese* 
+
+1. Er wordt verwacht dat er een verschil is in genexpressie tussen de **fibroblasten behandeld met BCLXL** en de **fibroblasten behandeld met ONECUT2**. Dit zal zorgen voor een grotere afstand op de x-as tussen deze genen.
+
+2. Aangezien de gebruikte cellijn voor elke behandeling hetzelfde is, zullen er geen verschillen zijn genexpressie afkomstig door verschillende cellijnen. De afstand op de y-as zal dan klein zijn.
+
+#### *Plot de principal components*
+
+```{r PC1 vs PC2, echo=TRUE}
+#Maak een data frame met metadata en PCA waardes
+pca_plotting <- cbind(metadata, pca$x)
+
+# Verkrijg de percentages van PCs
+PC1_var <- round(pca_summary["Proportion of Variance", "PC1"]*100, digits = 1)
+PC2_var <- round(pca_summary["Proportion of Variance", "PC2"]*100, digits = 1)
+PC3_var <- round(pca_summary["Proportion of Variance", "PC3"]*100, digits = 1)
+PC4_var <- round(pca_summary["Proportion of Variance", "PC4"]*100, digits = 1)
+
+# Voeg de percentages toe aan de data frame
+percentages <- c(PC1_var, PC2_var, PC3_var, PC4_var)
+df <- tibble(PC = c("PC1","PC2","PC3","PC4"), Percentage=percentages)
+pca_plotting2 <- merge(pca_plotting, df)
+
+# Plot de PC variabelen in een staafdiagram
+ggplot(pca_plotting2) + 
+  geom_col(aes(x=PC, y=Percentage, fill = PC)) +
+  ggtitle("Fig 3: PC percentages van de PCA voor \n fibroblasten transdifferentiatie onderzoek") +
+  xlab("PC") +
+  ylab("Proportie van Variatie (%)") +
+  theme_bw()
+
+#Plot PC1 vs PC2
+ggplot(pca_plotting) + 
+  geom_point(aes(x=PC1, y=PC2, color = treatment), size = 5) +
+  ggtitle("Fig 4: PCA plot voor fibroblasten transdifferentiatie onderzoek") +
+  xlab(paste0("PC1 (", PC1_var, "%)")) +
+  ylab(paste0("PC2 (", PC2_var, "%)")) +
+  theme_bw()
+```
+
+**Conclusie:**  
+Op basis van de resultaten van *figuur 3* is te zien dat PC1 90% van de variatie weergeeft van de RNA-sequencing data.
+
+Op basis van de resultaten van *figuur 4* kan geconclueerd worden dat er een groot verschil is in de genexpressie tussen de *"Fibroblasten behandeld met BCLXL"* en *"Fibroblasten behandeld met ONECUT2"*. Hierdoor is er een grote afstand zichtbaar tussen de fibroblasten op de x-as. Dit komt overeen met de hypothese.
+
+Er wordt ook gezien dat er een groot verschil in de genexpressie tussen de **fibroblasten samples** is. Dit is vreemd, aangezien de behandelingen in duplo uitgevoerd zijn met de exact zelfde cellijnen en behandelingen. Hoogst waarschijnlijk is er iets mis gegaan tijdens de behandelingen van de duplo meting, zoals contaminatie. Dit kan ook het lage percentage verklaren van het aantal toegewezen fragmenten.
+
+## **Differential gene expression analysis**
+
+Er moet uiteindelijk bekeken worden wat het verschil is in genexpressie tussen *"Fibroblasten behandeld met BCLXL"* en *"Fibroblasten behandeld met ONECUT2"*. Hiervoor wordt gebruik gemaakt van een "Differential Gene Expression (DGE)" analyse. In een DGE analyse wordt gezocht naar een set genen met een ander expressie profiel ten opzichte van een andere conditie. Deze genen zijn dan "differentially expressed (DE)". Hiertoe wordt gekeken naar significantie en dus p-waarden.
+
+Een p-waarde geeft weer of er een significant verschil aanwezig is tussen twee condities. In een DGE-analyse moet de p-waarde voor elk gen berekend worden. In dit geval 28.395 genen. Hiervoor moeten de p-waarden worden gecorrigeerd. De output van het DESeq2-pakket geeft zowel ongecorrigeerde *p-values*, als gecorrigeerde p-waardes *padj* (p-adjusted).
+
+Op basis van p-waarden alleen kan echter niet geconcludeerd worden of de expressie van genen toeneemt ( **upreguleerd** ) of afneemt ( **downreguleerd** ). Hiervoor berekent DESeq2 ook de **fold change**. De fold changes worden gerapporteerd als **log2 fold changes (LFC)**. Dat betekent dat de log2 van de fold change wordt genomen. Stel dat een gen een 4x verhoogde expressie ( **= upregulated** ) heeft in cellen behandeld met BCLXL vergeleken met behandelde cellen met ONECUT2. De LFC zou dan log2(4) = 2 zijn. Op dezelfde manier geeft een LFC van 2 een 4x (2\^2) toename in genexpressie aan in de BCLXL behandelde cellen.
+
+## **Uitvoering van DGE analyse**
+
+```{r DGE analyse, echo=TRUE, message=FALSE}
+# Uitvoer DGE analyse
+fibroblasten_dge <- DESeq(dds)
+
+```
+
+Na de uitvoering van de DGE analyse, kunnen de resultaten van de DGE analyse bekeken worden met behulp van de **results()* functie.
+
+```{r Resultaten, echo=TRUE}
+#Verkrijgt de resultaten van de DGE Analyse.
+fibroblasten_dge_results <- results(fibroblasten_dge, alpha = 0.01, lfcThreshold = 1)
+fibroblasten_dge_results
+
+#Verkrijgt een samenvatting van de resultaten.
+summary(fibroblasten_dge_results)
+
+```
+
+Met deze samenvatting kan gezien worden dat ongeveer 1753 genen upgereguleerd zijn en ongeveer 939 genen downreguleerd zijn als gevolg van de behandeling van fibroblasten met ONECUT2 ten opzichte van BCLXL.
+
+## **Visualisatie van de DGE resultaten.**
+
+Om de resultaten van de DGE analyse te visualiseren, worden gebruik gemaakt van volcano plots en heatmaps.
+
+### *Volcano Plots*
+
+In deze grafiek worden de significant verschillende genen, met een padj \< 0.01, onderscheiden worden door een donkeroranje kleur. De naam van het meest significante upgereguleerde gen wordt ook toegevoerd.
+
+```{r Volcano Plot, echo=TRUE}
+
+# Creert een dataframe voor plotting without genes with NA's values
+fibroblasten_dge_plotting <- data.frame(fibroblasten_dge_results) %>% filter(!is.na(padj))
+
+# Maak een kolom waar je vertelt of het gen een significante verschil heeft.
+fibroblasten_dge_plotting <- fibroblasten_dge_plotting %>% 
+  mutate(signif = if_else(padj < 0.01 & abs(log2FoldChange) > 1, "Significant", "Not significant"))
+
+# Maak objecten met het aantal upgereguleerde en downgereguleerd genen
+
+up_genen <- fibroblasten_dge_plotting %>%  filter(padj < 0.01 & log2FoldChange > 1) %>%  nrow()
+
+down_genen <- fibroblasten_dge_plotting %>% filter(padj < 0.01 & log2FoldChange < -1) %>% nrow()
+
+# Maak een volcano plot
+fibroblasten_dge_plotting %>% 
+  ggplot(aes(x = log2FoldChange, y = -log10(padj), color = signif)) +
+  geom_point() +
+  geom_vline(xintercept = 1, linetype="dashed") +
+  geom_vline(xintercept = -1, linetype="dashed") +
+  geom_hline(yintercept = -log10(0.01), linetype="dashed") +
+  xlab("log2 fold change") +
+  ylab("-log10 adjusted p-value") +
+  ggtitle("Fig 5: Volcano plot met de significante genen \n van het fibroblast transdifferentiatie onderzoek")+
+  theme_bw() +
+  
+  # Veranderd de legende van de tekst en kleur
+  scale_colour_manual(values = c("grey", "darkorange"), name = "Significance") +
+  
+  # het aantal upgereguleerde en downgereguleerd genen
+ annotate("text", x = -5, y = 200, 
+           label = paste("Downgereguleerde \n genen:", down_genen ), colour = "darkorange") +
+  
+  annotate("text", x = 8, y = 200, 
+           label = paste("Upgereguleerde \n genen:", up_genen ), colour = "darkorange")
+
+```
+
+### *Heatmaps*
+
+Een heatmap wordt gebruikt om te zien welke genen zijn *up- en downgereguleerd* tijdens het *transdifferentiatie proces*. Hiervoor worden eerst de **top 5 up- en downgereguleerde genen** geselecteerd en vervolgens geplot in een heatmap.
+
+```{r heatmap (top_genen), echo=TRUE}
+#Verkrijgt genen met een significante p-waarde
+sign_genes <- fibroblasten_dge_results[which(fibroblasten_dge_results$padj < 0.01),]
+
+# Verkrijgt de 5 meeste significante upgenen
+top5_upgenen <- rownames(sign_genes[order(sign_genes$log2FoldChange, decreasing = TRUE)[1:5], ])
+
+# Verkrijgt de 5 meeste significante downgenen
+top5_downgenen <- rownames(sign_genes[order(sign_genes$log2FoldChange, decreasing = FALSE)[1:5], ])
+
+# Combinneer de twee top 5 genen in een object
+top_genen <- c(top5_upgenen, top5_downgenen)
+
+# Verkrijgt de count values voor de top 5 upgenen
+count_values <- assay(dds)[top_genen,]
+
+# Vervang de kolom namen met de condities 
+colnames(count_values) <- colData(dds)$treatment
+
+# Visualiseert de resultaten in een heatmap( genormaliseerd)
+pheatmap(count_values, scale = "row", show_rownames = TRUE)
+```
+
+### *Ontdekt welke genen veranderen*
+
+De **top 5 up- en downgereguleerde genen** zijn nu gevonden. Echter zijn alleen de *Entrez-identificatienummers* voor deze genen zichtbaar. Aangezien dit niet veel informatie verschaft, worden de gen symbolen aangegeven door middel van de Entrex-identificatienummers m.b.v de *mapIds() functie*.
+
+#### *mapIds(functie)*
+
+Deze functie wordt gebruikt om identificatienummers van genen of eiwitten om te zetten naar andere identificatienummers of annotaties, zoals het omzetten van Entrez-genen naar symbolen of omgekeerd.
+
+Bijvoorbeeld als je een lijst hebt met Entrez-gen-ID's en je wilt de corresponderende gen-symboolnamen verkrijgen, kun je mapIds() gebruiken om deze conversie uit te voeren. Dit maakt gebruik van een annotatie-database die beschikbaar is in pakketten zoals org.Hs.eg.db (voor menselijke genen).
+
+```{r Gen Symbolen , echo=TRUE, message=FALSE}
+
+# Omzet de 5 meeste significante upgenen in een dataframe
+top5_upgenen <- sign_genes[order(sign_genes$log2FoldChange, decreasing = TRUE)[1:5],] %>% as.data.frame()
+
+# Omzet de 5 meeste significante downgenen in een dataframe
+top5_downgenen <- sign_genes[order(sign_genes$log2FoldChange, decreasing = FALSE)[1:5],] %>% as.data.frame()
+
+# Combinneer de twee top 5 genen in een dataframe
+top_genen <- rbind(top5_upgenen, top5_downgenen)
+
+knitr::kable(head(top_genen))
+
+# Voeg een extra kolom aan de dataframe met Entrez id (Gebaseerd op de rijennamen)
+top_genen <- top_genen %>% mutate(entrezid = rownames(top_genen))
+
+# Verkrijgt de gen symbolen gebaseerd ip de Entrez identifiers
+top_genen$symbol <- mapIds(org.Hs.eg.db,
+                             keys = top_genen$entrezid,
+                             column = "SYMBOL",
+                             keytype = "ENTREZID",
+                             multiVals = "first")
+
+knitr::kable(head(top_genen))
+
+```
+
+Nu dat de gensymbolen van de **top 5 up- en downgereguleerde genen** gevonden zijn, kunnen deze gensymbolen gebruikt worden in de heatmap als 'rownames'. 
+
+```{r heatmap (symbolen), echo=TRUE}
+#Maak een object met DE-genen symbolen
+symbolen <- top_genen$symbol
+
+# Veranderd de rijen namen voor de top 5 up- en downgereguleerde gene symbolen
+rownames(count_values) <- symbolen
+
+# Visualiseert de resultaten in de heatmap  met de DE-genen(genormaliseerd)
+pheatmap(count_values, scale = "row", show_rownames = TRUE)
+
+```
+
+Met de verkregen heatmap is duidelijk zichtbaar welke genen **up- of downgereguleerd* zijn. Echter is hieruit niet duidelijk welke biologische processen geassocieerd met de genen up- of downgereguleerd zijn. Hiertoe wordt een GO enrichment term uitgevoerd op de 10 genen.
+
+
+## **Cytogenetische band functie**
+
+```{r Cytogenetische band, echo=TRUE, message=FALSE}
+
+cytogenbandToEntrex <- function(cytogen_band) {
+  
+  # Verkrijg de cytogene mapping gebaseerd op de entrex IDs voor de 10 genen.
+  top_genen$chromosomal_band <- mapIds(org.Hs.eg.db,
+                                       keys = top_genen$entrezid,
+                                       column = "MAP",
+                                       keytype = "ENTREZID",
+                                       multiVals = "first")
+  
+  chromband_to_entrezid <- top_genen %>% filter(chromosomal_band == cytogen_band) 
+  entrezid_chromband <- chromband_to_entrezid$entrezid
+  
+  return(entrezid_chromband)
+}
+
+#Voorbeeld: chromosomal band geeft entrex id terug.
+cytogenbandToEntrex("7p21.2")
+
+```
+
+
+## **Uitvoer GO term enrichment analyse**
+
+Zoals eerder aangegeven, ligt de interesse niet alleen bij welke genen zijn up- en downgereguleerd na behandeling, maar welke biologische processen deze genen beïnvloeden. Hiertoe wordt een **GO tern enrichment analyse** uitgevoerd. Er wordt hiervoor gebruik gemaakt van de speciale software *GOstats-pakket* in R en functie *hyperGtest()*. Zo wordt een duidelijk beeld geschetst tussen te verschillen in genexpressie in fibroblasten na behandeling met ONECUT2 of BCLXL.
+
+Om herhalende code te voorkomen, is een functie ontworpen om de **GO term enrichment analyse** voor up- en downgereguleerde genen makkelijker en sneller uit te voeren.
+
+### *GO term enrichment analyse functie*
+
+```{r GO term functie, echo=TRUE, message=FALSE}
+# GO term enrichment analysis functie
+ 
+goTermAnalysis_fibroblasten <- function(dge_results, upregulated, lfc_value, padj_value) {
+  # Maak een lijst van alle genen in de dataset
+  all_fibroblasten_genen <- dge_results %>% data.frame() %>% rownames()
+  if (upregulated==TRUE) {
+    # Maak een  lijst van alle upgereguleerde genen
+    upregulated_fibroblasten_genen <- dge_results %>% data.frame() %>% 
+      filter(log2FoldChange > lfc_value, padj < padj_value) %>% rownames()
+    #Uitvoer GO term enrichment analysis
+    test_object_fibroblasten_up <- new("GOHyperGParams",
+                               geneIds = upregulated_fibroblasten_genen,
+                               universeGeneIds = all_fibroblasten_genen, 
+                               annotation = "org.Hs.eg.db", 
+                               ontology = "BP", 
+                               pvalueCutoff = 1,
+                               testDirection = "over")
+
+    goterm_analysis_up_summary <- summary(hyperGTest(test_object_fibroblasten_up))
+    return(goterm_analysis_up_summary)
+  } else {
+    # Maak een  lijst van alle downgereguleerde genen
+    downregulated_fibroblasten_genen <- dge_results %>% data.frame() %>% 
+      filter(log2FoldChange < -lfc_value, padj < padj_value) %>% rownames()
+    #Uitvoer GO term enrichment analysis
+    test_object_fibroblasten_down <- new("GOHyperGParams",
+                                 geneIds = downregulated_fibroblasten_genen,
+                                 universeGeneIds = all_fibroblasten_genen, 
+                                 annotation = "org.Hs.eg.db", 
+                                 ontology = "BP", 
+                                 pvalueCutoff = 1,
+                                 testDirection = "over")
+
+    goterm_analysis_down_summary <- summary(hyperGTest(test_object_fibroblasten_down))
+    return(goterm_analysis_down_summary)
+  }
+  }
+
+```
+
+Vervolgens wordt de functie uitgevoerd voor upgereguleerde genen en downgereguleerde genen met een LFC van 1 en -1 en een padj van <0.01.
+
+### *Top 20 Upgereguleerde genen*
+
+```{r Upgereguleerde genen, echo=TRUE}
+#Upregulated
+# Maak een dataframe met de samenvatting van de resultaten van GO term analysis
+summary_fibroblasten_up_GOterm <- goTermAnalysis_fibroblasten(fibroblasten_dge_results, upregulated = TRUE, 1, 0.01)
+ 
+# Pas de p-waarden aan voor meervoudige testen.
+summary_fibroblasten_up_GOterm$padj <- p.adjust(summary_fibroblasten_up_GOterm$Pvalue, method = "BH")
+ 
+# Selecteer alleen genensets die groter zijn dan 5 maar kleiner dan 500
+# (om te voorkomen dat zeer kleine en zeer grote genensets worden meegenomen).
+summary_fibroblasten_up_GOterm <- summary_fibroblasten_up_GOterm %>% filter(Count > 5) %>% filter(Count < 500)
+ 
+# Kies de top 20 GO termen
+goterm_analysis_up_summary_top20 <- summary_fibroblasten_up_GOterm[order(summary_fibroblasten_up_GOterm$padj)[1:20],]
+ 
+# Plot  p-waardes van de top 20 uogereguleerde GO termen
+goterm_analysis_up_summary_top20$Term <- factor(goterm_analysis_up_summary_top20$Term, 
+                                     levels = goterm_analysis_up_summary_top20$Term[
+                                       order(goterm_analysis_up_summary_top20$padj, decreasing = TRUE)])
+ 
+goterm_analysis_up_summary_top20 %>% ggplot(aes(x = Term, y = -log10(padj))) +
+  geom_point() +
+  coord_flip() +
+  ylab(expression(-log[10](adjusted~italic(P)~value))) + 
+  xlab("GO terms") +
+  ggtitle("Fig 6: Top 20 enriched GO termen\n voor upgereguleerde genen") +
+  theme_bw()
+
+```
+
+Na het uitvoeren van de *GO term enrichment analyse* voor upgereguleerde genen, is zichtbaar in *figuur 5* dat na behandeling met transcriptiefactor *ONECUT2* genen worden upgereguleerd die betrokken zijn bij onder andere de volgende biologische processen: Ontwikkeling van zenuwstelsel en organen (Development), chemische signalering (Signaling), DNA- en RNA-transcriptie (Transcription) en **cel apoptose**.
+
+### *Top 20 Downgereguleerde genen*
+
+```{r Downgereguleerde genen, echo=TRUE}
+#Downregulated
+# Maak een dataframe met de samenvatting van de resultaten van GO term analysis
+summary_fibroblasten_down_GOterm <- goTermAnalysis_fibroblasten(fibroblasten_dge_results, upregulated = FALSE, 1, 0.01)
+ 
+# Pas de p-waarden aan voor meervoudige testen.
+summary_fibroblasten_down_GOterm$padj <- p.adjust(summary_fibroblasten_down_GOterm$Pvalue, method = "BH")
+ 
+# Selecteer alleen genensets die groter zijn dan 5 maar kleiner dan 500
+# (om te voorkomen dat zeer kleine en zeer grote genensets worden meegenomen).
+summary_fibroblasten_down_GOterm <- summary_fibroblasten_down_GOterm %>% filter(Count > 5) %>% filter(Count < 500)
+ 
+# Kies de top 20 GO termen
+goterm_analysis_down_summary_top20 <- summary_fibroblasten_down_GOterm[order(summary_fibroblasten_down_GOterm$padj)[1:20],]
+ 
+# Plot  p-waardes van de top 20 downgereguleerde GO termen
+goterm_analysis_down_summary_top20$Term <- factor(goterm_analysis_down_summary_top20$Term, 
+                                     levels = goterm_analysis_down_summary_top20$Term[
+                                       order(goterm_analysis_down_summary_top20$padj, decreasing = TRUE)])
+ 
+goterm_analysis_down_summary_top20 %>% ggplot(aes(x = Term, y = -log10(padj))) +
+  geom_point() +
+  coord_flip() +
+  ylab(expression(-log[10](adjusted~italic(P)~value))) + 
+  xlab("GO terms") +
+  ggtitle("Fig 7: Top 20 enriched GO termen\n voor downgereguleerde genen") +
+  theme_bw()
+```
+
+Na het uitvoeren van de *GO term enrichment analyse* voor downgereguleerde genen, is zichtbaar in *figuur 6* dat na behandeling met transcriptiefactor *ONECUT2* genen worden downgereguleerd die betrokken zijn bij onder andere de volgende biologische processen: Het ontwikkelen van structuur van weefsels en cellen (Development),  morfogenese van de cel-structuur (Morphogenesis), cel beweging en motiliteit.
+
+# **Conclusie**
+
+Op basis van de verkregen resultaten van de RNA-sequencing analyse kan er geconcludeerd worden dat **er een significant verschil is in genexpressie en biologische functies tussen fibroblasten behandeld met *BCLXL* en *ONECUT2* **. Dit wordt aangetoond door de resultaten van de **"Differential Gene Expression" analyse ** en de **"GO term enrichment" analyse**.
+
+Bij de **"Differential Gene Expression"** analyse en plots (PCA en Volcano plots), is het zichtbaar dat meerdere genen een significant verschil in hun genexpressie vertonen. Deze veranderingen in genexpressie vormen een duidelijk signaal dat er een verschil is tussen fibroblasten behandeld met *BCLXL* en *ONECUT2*.
+
+Bij de **"GO term enrichment"** analyse, zoals zichtbaar in *figuur 6*, zijn de biologische functies die upgereguleerd worden tijdens het transdifferentiatieproces van de fibroblasten na behandeling met ONECUT2 geassocieerd met de ontwikkeling van het zenuwstelsel en organen (Development), chemische signalering (Signaling) en DNA- en RNA-transcriptie (Transcription). Deze upgereguleerde biologische functies zijn een goed signaal dat de overexpressie van de transcriptiefactor ONECUT2 ervoor zorgt dat de fibroblasten differentiëren naar hersencellen. Dit suggereert dat de **fibroblasten hun structuur veranderen en zich dus klaarmaken om andere functies uit te voeren**. Echter zien we ook dat sommige biologische functies die upgereguleerd worden tijdens het transdifferentiatieproces van de fibroblasten geassocieerd zijn met *cel-apoptose*. Dit suggereert dat de **fibroblasten zich ook klaarmaken om dood te gaan als het transdifferentiatie proces zorgt voor problemen**.
+
+Met behulp van *figuur 7* is zichtbaar dat de biologische functies die downgereguleerd worden tijdens het transdifferentiatieproces van de fibroblasten, geassocieerd zijn met de ontwikkeling van de structuur van weefsels en cellen (Development), morfogenese van de celstructuur (Morphogenesis) en celbeweging en motiliteit. Dus **fibroblasten verliezen hun structuur en dus ook hun functie**. Dit suggereert dat de **fibroblasten zich klaarmaken om een andere structuur te krijgen en andere functies uit te voeren, zoals gebeurd bij differentiatie naar hersencellen**.
+
+Op basis van de verkregen resultaten van de **"GO term enrichment"** analyse kan ook geconcludeerd worden dat fibroblasten behandeld met ONECUT2 van structuur veranderen en dus ook van functie. Dus **fibroblasten behandeld met ONECUT2 maken zich klaar om hersencellen te worden, echter is er ook een risico dat fibroblasten een apoptotisch proces ondergaan door complicaties tijdens het transdifferentiatie proces**.
+
+
+# **Discussie**
+
+Het is belangrijk op te merken dat de betrouwbaarheid van de resultaten van deze RNA sequencing analyse verminderd wordt door de resultaten van *figuren 1 en 3*. In figuur 1 blijkt het aantal toegewezen fragmenten laag en uit figuur 3 blijkt dat er een verschil aanwezig is tussen de duplo metingen van de behandelingen. Dit kan mogelijk ontstaan zijn door contaminatie tijdens het onderzoek. Dit kan invloed hebben gehad op de interpretatie van de up- en downregulatie van de biologische processen. Het wordt aangeraden om hierdoor het experiment te herhalen.
+
