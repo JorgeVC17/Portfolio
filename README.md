@@ -31,7 +31,7 @@ Passionate and inquisitive Life Sciences student at Hogeschool Utrecht, with a k
 
 ### Verkoopassistentie
 
-#### Fruit Company, Gorinchem, , Sep 2022 - Jul 2023
+#### Fruit Company, Gorinchem, Sep 2022 - Jul 2023
 
 -   I handled inventory management and supported the sales team's daily activities. I provided customer advice both in person and through phone and email communication. Additionally, I performed various administrative tasks as required.
 
@@ -117,6 +117,8 @@ During my time as a volunteer social worker, I was responsible for organizing an
 - **Bash**
 
   - *HOMER*
+  
+  - *Bowtie2*
 
 - **Computer Vision**
 
@@ -151,6 +153,7 @@ During my time as a volunteer social worker, I was responsible for organizing an
   - *Library:*
   
     -   scikit-learn == 1.3.2
+
 
 ## Skills
 
